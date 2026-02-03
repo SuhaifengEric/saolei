@@ -1,6 +1,6 @@
 /**
- * Audio Manager using Web Audio API
- * Generates synthesized sounds for game events without external files
+ * 音频管理器 - 使用 Web Audio API
+ * 为游戏事件生成合成音效，无需外部文件
  */
 
 export type SoundType = 'click' | 'flag' | 'victory' | 'mine' | 'chord';
@@ -11,12 +11,12 @@ class AudioManager {
   private volume: number = 0.3;
 
   constructor() {
-    // Initialize audio context on first user interaction
+    // 在首次用户交互时初始化音频上下文
     this.init();
   }
 
   /**
-   * Initialize AudioContext (must be done after user gesture)
+   * 初始化 AudioContext（必须在用户手势后完成）
    */
   private init(): void {
     if (!this.context) {
@@ -24,13 +24,13 @@ class AudioManager {
         const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
         this.context = new AudioContextClass();
       } catch (e) {
-        console.warn('Web Audio API not supported:', e);
+        console.warn('Web Audio API 不支持:', e);
       }
     }
   }
 
   /**
-   * Resume audio context if suspended (browsers suspend by default)
+   * 如果音频上下文被暂停，恢复它（浏览器默认会暂停）
    */
   private resume(): void {
     if (this.context && this.context.state === 'suspended') {
@@ -39,8 +39,8 @@ class AudioManager {
   }
 
   /**
-   * Play a synthesized sound
-   * @param type - Type of sound to play
+   * 播放合成音效
+   * @param type - 要播放的音效类型
    */
   play(type: SoundType): void {
     if (this.isMuted) return;
@@ -70,7 +70,7 @@ class AudioManager {
   }
 
   /**
-   * Generate a simple click sound (short, high-pitched beep)
+   * 生成简单的点击音效（短促的高音哔声）
    */
   private playClickSound(): void {
     if (!this.context) return;
@@ -92,7 +92,7 @@ class AudioManager {
   }
 
   /**
-   * Generate a flag sound (short, lower-pitched thud)
+   * 生成标记音效（短促的低音闷响）
    */
   private playFlagSound(): void {
     if (!this.context) return;
@@ -114,7 +114,7 @@ class AudioManager {
   }
 
   /**
-   * Generate a chord sound (quick sequence of notes)
+   * 生成和弦音效（快速的音符序列）
    */
   private playChordSound(): void {
     if (!this.context) return;
@@ -139,12 +139,12 @@ class AudioManager {
   }
 
   /**
-   * Generate a victory sound (ascending arpeggio)
+   * 生成胜利音效（上升的琶音）
    */
   private playVictorySound(): void {
     if (!this.context) return;
 
-    // Arpeggio: C5, E5, G5, C6
+    // 琶音：C5, E5, G5, C6
     const notes = [523.25, 659.25, 783.99, 1046.50];
     const startTime = this.context.currentTime;
 
@@ -168,7 +168,7 @@ class AudioManager {
   }
 
   /**
-   * Generate a mine/explode sound (low-frequency rumble)
+   * 生成地雷/爆炸音效（低频轰鸣）
    */
   private playMineSound(): void {
     if (!this.context) return;
@@ -197,7 +197,7 @@ class AudioManager {
   }
 
   /**
-   * Toggle mute state
+   * 切换静音状态
    */
   toggleMute(): boolean {
     this.isMuted = !this.isMuted;
@@ -205,39 +205,39 @@ class AudioManager {
   }
 
   /**
-   * Set mute state
+   * 设置静音状态
    */
   setMute(muted: boolean): void {
     this.isMuted = muted;
   }
 
   /**
-   * Get current mute state
+   * 获取当前静音状态
    */
   isAudioMuted(): boolean {
     return this.isMuted;
   }
 
   /**
-   * Set volume (0.0 to 1.0)
+   * 设置音量（0.0 到 1.0）
    */
   setVolume(vol: number): void {
     this.volume = Math.max(0, Math.min(1, vol));
   }
 
   /**
-   * Get current volume
+   * 获取当前音量
    */
   getVolume(): number {
     return this.volume;
   }
 }
 
-// Singleton instance
+// 单例实例
 let audioManagerInstance: AudioManager | null = null;
 
 /**
- * Get the singleton AudioManager instance
+ * 获取单例 AudioManager 实例
  */
 export function getAudioManager(): AudioManager {
   if (!audioManagerInstance) {
@@ -247,21 +247,21 @@ export function getAudioManager(): AudioManager {
 }
 
 /**
- * Play a sound (convenience function)
+ * 播放音效（便捷函数）
  */
 export function playSound(type: SoundType): void {
   getAudioManager().play(type);
 }
 
 /**
- * Toggle mute (convenience function)
+ * 切换静音（便捷函数）
  */
 export function toggleMute(): boolean {
   return getAudioManager().toggleMute();
 }
 
 /**
- * Get audio muted state (convenience function)
+ * 获取音频静音状态（便捷函数）
  */
 export function isAudioMuted(): boolean {
   return getAudioManager().isAudioMuted();

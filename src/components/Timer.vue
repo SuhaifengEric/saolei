@@ -1,24 +1,31 @@
 <script setup lang="ts">
+/**
+ * 计时器组件
+ * 负责显示游戏时间
+ */
 import { computed } from 'vue';
 import '../assets/styles/main.css';
 
+// 组件属性
 interface Props {
-  seconds: number;
-  label?: string;
-  showLabel?: boolean;
+  seconds: number; // 秒数
+  label?: string; // 标签
+  showLabel?: boolean; // 是否显示标签
 }
 
+// 属性默认值
 const props = withDefaults(defineProps<Props>(), {
   label: 'Time',
   showLabel: false,
 });
 
-// Format time as HH:MM:SS
+// 格式化时间为 HH:MM:SS
 const formattedTime = computed(() => {
   const hours = Math.floor(props.seconds / 3600);
   const minutes = Math.floor((props.seconds % 3600) / 60);
   const secs = props.seconds % 60;
 
+  // 数字补零函数
   const pad = (num: number) => num.toString().padStart(2, '0');
 
   if (hours > 0) {
@@ -27,7 +34,7 @@ const formattedTime = computed(() => {
   return `${pad(minutes)}:${pad(secs)}`;
 });
 
-// Format time for tooltip
+// 为工具提示格式化时间
 const fullFormattedTime = computed(() => {
   const hours = Math.floor(props.seconds / 3600);
   const minutes = Math.floor((props.seconds % 3600) / 60);

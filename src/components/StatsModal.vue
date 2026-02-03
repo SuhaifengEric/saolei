@@ -1,34 +1,44 @@
 <script setup lang="ts">
+/**
+ * 统计模态框组件
+ * 负责显示游戏统计数据和排行榜
+ */
 import { ref, computed, onMounted } from 'vue';
 import '../assets/styles/main.css';
 import { useI18n } from '../composables/useI18n';
 
+// 使用国际化组合式函数
 const { t, language } = useI18n();
 
+// 游戏记录接口
 interface GameRecord {
-  id: string;
-  difficulty: string;
-  result: 'won' | 'lost';
-  time: number;
-  timestamp: number;
+  id: string; // 记录ID
+  difficulty: string; // 难度
+  result: 'won' | 'lost'; // 结果：获胜或失败
+  time: number; // 游戏时间（秒）
+  timestamp: number; // 时间戳
 }
 
+// 统计数据接口
 interface Stats {
-  totalGames: number;
-  wins: number;
-  losses: number;
-  winRate: number;
-  bestTime: number;
-  bestTimeDifficulty: string;
+  totalGames: number; // 总游戏数
+  wins: number; // 获胜次数
+  losses: number; // 失败次数
+  winRate: number; // 胜率
+  bestTime: number; // 最佳时间
+  bestTimeDifficulty: string; // 最佳时间对应的难度
 }
 
-const STATS_KEY = 'minesweeper_stats';
-const LEADERBOARD_KEY = 'minesweeper_leaderboard';
+// 本地存储键名
+const STATS_KEY = 'minesweeper_stats'; // 统计数据键
+const LEADERBOARD_KEY = 'minesweeper_leaderboard'; // 排行榜键
 
+// 组件事件
 const emit = defineEmits<{
-  close: [];
+  close: []; // 关闭模态框
 }>();
 
+// 统计数据
 const stats = ref<Stats>({
   totalGames: 0,
   wins: 0,
@@ -38,9 +48,10 @@ const stats = ref<Stats>({
   bestTimeDifficulty: 'N/A',
 });
 
+// 排行榜数据
 const leaderboard = ref<GameRecord[]>([]);
 
-// Load stats and leaderboard from localStorage
+// 从本地存储加载统计数据和排行榜
 const loadStats = () => {
   try {
     const savedStats = localStorage.getItem(STATS_KEY);
@@ -53,29 +64,29 @@ const loadStats = () => {
       leaderboard.value = JSON.parse(savedLeaderboard);
     }
   } catch (error) {
-    console.error('Error loading stats:', error);
+    console.error('加载统计数据失败:', error);
   }
 };
 
-// Save stats to localStorage
+// 保存统计数据到本地存储
 const saveStats = () => {
   try {
     localStorage.setItem(STATS_KEY, JSON.stringify(stats.value));
   } catch (error) {
-    console.error('Error saving stats:', error);
+    console.error('保存统计数据失败:', error);
   }
 };
 
-// Save leaderboard to localStorage
+// 保存排行榜到本地存储
 const saveLeaderboard = () => {
   try {
     localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(leaderboard.value));
   } catch (error) {
-    console.error('Error saving leaderboard:', error);
+    console.error('保存排行榜失败:', error);
   }
 };
 
-// Clear all stats
+// 清除所有统计数据
 const clearStats = () => {
   if (confirm(language.value === 'zh' ? '确定要清除所有统计数据吗？' : 'Are you sure you want to clear all statistics?')) {
     stats.value = {
@@ -92,7 +103,7 @@ const clearStats = () => {
   }
 };
 
-// Format time for display
+// 格式化时间显示
 const formatTime = (seconds: number): string => {
   if (seconds === Infinity) return '--';
   const minutes = Math.floor(seconds / 60);

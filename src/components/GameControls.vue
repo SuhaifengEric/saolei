@@ -1,32 +1,44 @@
 <script setup lang="ts">
+/**
+ * 游戏控制组件
+ * 负责游戏难度选择和新游戏开始
+ */
 import { ref, computed, watch } from 'vue';
 import '../assets/styles/main.css';
 import { useI18n } from '../composables/useI18n';
 import type { Difficulty } from '../types/game';
 
+// 使用国际化组合式函数
 const { t, language } = useI18n();
 
+// 自定义难度接口
 interface CustomDifficulty {
-  rows: number;
-  cols: number;
-  mines: number;
+  rows: number; // 行数
+  cols: number; // 列数
+  mines: number; // 地雷数
 }
 
+// 难度级别类型
 type DifficultyLevel = 'beginner' | 'intermediate' | 'expert' | 'custom';
 
+// 组件事件
 const emit = defineEmits<{
-  'new-game': [difficulty: Difficulty];
+  'new-game': [difficulty: Difficulty]; // 开始新游戏
 }>();
 
+// 选中的难度级别
 const selectedDifficulty = ref<DifficultyLevel>('beginner');
+// 是否显示自定义难度设置
 const showCustom = ref(false);
 
+// 自定义难度设置
 const customDifficulty = ref<CustomDifficulty>({
   rows: 16,
   cols: 30,
   mines: 99,
 });
 
+// 难度设置对象
 const difficulties: Record<DifficultyLevel, Difficulty> = {
   beginner: {
     name: language.value === 'zh' ? '初级' : 'Beginner',
@@ -54,11 +66,11 @@ const difficulties: Record<DifficultyLevel, Difficulty> = {
   },
 };
 
-// Validate custom difficulty
+// 验证自定义难度
 const validateCustomDifficulty = computed(() => {
   const { rows, cols, mines } = customDifficulty.value;
   const totalCells = rows * cols;
-  const maxMines = Math.floor(totalCells * 0.85); // Max 85% mines
+  const maxMines = Math.floor(totalCells * 0.85); // 最多85%的格子是地雷
   
   return {
     valid: rows >= 5 && rows <= 30 && cols >= 5 && cols <= 30 && mines >= 1 && mines <= maxMines,
@@ -66,7 +78,7 @@ const validateCustomDifficulty = computed(() => {
   };
 });
 
-// Update custom difficulty in the difficulties object
+// 监听自定义难度和显示状态变化
 watch([customDifficulty, showCustom], () => {
   if (selectedDifficulty.value === 'custom' && validateCustomDifficulty.value.valid) {
     difficulties.custom = {
@@ -78,7 +90,7 @@ watch([customDifficulty, showCustom], () => {
   }
 }, { deep: true });
 
-// Watch language changes to update difficulty names
+// 监听语言变化，更新难度名称
 watch(language, (newLang) => {
   difficulties.beginner.name = newLang === 'zh' ? '初级' : 'Beginner';
   difficulties.intermediate.name = newLang === 'zh' ? '中级' : 'Intermediate';
@@ -86,13 +98,13 @@ watch(language, (newLang) => {
   difficulties.custom.name = newLang === 'zh' ? '自定义' : 'Custom';
 });
 
-// Start a new game with selected difficulty
+// 开始新游戏
 const startNewGame = () => {
   const difficulty = difficulties[selectedDifficulty.value];
   emit('new-game', difficulty);
 };
 
-// Handle difficulty change
+// 处理难度变化
 const handleDifficultyChange = (level: DifficultyLevel) => {
   selectedDifficulty.value = level;
   showCustom.value = level === 'custom';

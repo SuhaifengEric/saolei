@@ -1,4 +1,8 @@
 <script setup lang="ts">
+/**
+ * 扫雷游戏主应用组件
+ * 管理游戏状态、事件处理和用户界面
+ */
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import './assets/styles/main.css';
 import { useGameState } from './composables/useGameState';
@@ -14,10 +18,10 @@ import StatsPanel from './components/StatsPanel.vue';
 import StatsModal from './components/StatsModal.vue';
 import type { Difficulty } from './types/game';
 
-// Use i18n composable
+// 使用国际化组合式函数
 const { t, toggleLanguage, initializeLanguage, language } = useI18n();
 
-// Use game state composable
+// 使用游戏状态组合式函数
 const {
   gameState,
   difficulty,
@@ -27,29 +31,29 @@ const {
   flagCell,
 } = useGameState();
 
-// Theme state
+// 主题状态
 const isDarkTheme = ref(true);
 
-// Audio mute state
+// 音频静音状态
 const isAudioMuted = ref(false);
 
-// Stats modal state
+// 统计模态框状态
 const showStatsModal = ref(false);
 
-// Stats panel ref
+// 统计面板引用
 const statsPanelRef = ref<InstanceType<typeof StatsPanel> | null>(null);
 
-// Keyboard focus state
+// 键盘导航激活状态
 const keyboardNavActive = ref(false);
 
-// Timer interval
+// 计时器间隔
 let timerInterval: number | null = null;
 
-// Performance-based timer
+// 基于性能的计时器
 let timerStartTime: number = 0;
 let elapsedTime: number = 0;
 
-// Toggle theme
+// 切换主题
 const toggleTheme = () => {
   isDarkTheme.value = !isDarkTheme.value;
   if (isDarkTheme.value) {
@@ -59,7 +63,7 @@ const toggleTheme = () => {
   }
 };
 
-// Initialize theme
+// 初始化主题
 const initializeTheme = () => {
   const savedTheme = localStorage.getItem('minesweeper_theme');
   if (savedTheme === 'light') {
@@ -71,18 +75,18 @@ const initializeTheme = () => {
   }
 };
 
-// Toggle audio mute
+// 切换音频静音
 const toggleAudioMute = () => {
   const muted = toggleAudioMuteFn();
   isAudioMuted.value = muted;
 };
 
-// Initialize audio mute state
+// 初始化音频静音状态
 const initializeAudio = () => {
   isAudioMuted.value = getAudioMuted();
 };
 
-// Start the timer
+// 开始计时器
 const startTimer = () => {
   if (timerInterval) {
     clearInterval(timerInterval);
@@ -96,7 +100,7 @@ const startTimer = () => {
   }, 100);
 };
 
-// Stop the timer
+// 停止计时器
 const stopTimer = () => {
   if (timerInterval) {
     clearInterval(timerInterval);

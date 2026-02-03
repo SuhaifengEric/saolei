@@ -1,19 +1,19 @@
 import { Cell } from '../types/game';
 
 /**
- * Simple seeded random number generator (Mulberry32 algorithm)
- * Browser-compatible, no external dependencies
- * @param seed - Base seed for the sequence
- * @returns Function that returns random numbers in [0, 1)
+ * 简单的种子随机数生成器（Mulberry32算法）
+ * 兼容浏览器，无外部依赖
+ * @param seed - 序列的基础种子
+ * @returns 返回一个函数，该函数返回[0, 1)范围内的随机数
  */
 function createSeededGenerator(seed: string): () => number {
-  // Convert string seed to a numeric seed
+  // 将字符串种子转换为数字种子
   let state = 0;
   for (let i = 0; i < seed.length; i++) {
     state = (state * 31 + seed.charCodeAt(i)) >>> 0;
   }
 
-  // Mulberry32 algorithm
+  // Mulberry32算法实现
   return () => {
     state += 0x6D2B79F5;
     let t = Math.imul(state ^ state >>> 15, state | 1);
@@ -23,12 +23,12 @@ function createSeededGenerator(seed: string): () => number {
 }
 
 /**
- * Generate a board with randomly placed mines using seeded random
- * @param rows - Number of rows in the board
- * @param cols - Number of columns in the board
- * @param mines - Number of mines to place
- * @param seed - Seed for reproducible random generation
- * @returns Board with mines placed
+ * 使用种子随机生成器创建带有随机放置地雷的游戏板
+ * @param rows - 游戏板的行数
+ * @param cols - 游戏板的列数
+ * @param mines - 要放置的地雷数量
+ * @param seed - 用于可重复随机生成的种子
+ * @returns 已放置地雷的游戏板
  */
 export function generateBoard(
   rows: number,
@@ -36,10 +36,10 @@ export function generateBoard(
   mines: number,
   seed: string
 ): Cell[][] {
-  // Initialize random number generator with seed
+  // 使用种子初始化随机数生成器
   const rng = createSeededGenerator(seed);
 
-  // Create empty board
+  // 创建空游戏板
   const board: Cell[][] = [];
   for (let r = 0; r < rows; r++) {
     board[r] = [];
@@ -47,21 +47,21 @@ export function generateBoard(
       board[r][c] = {
         row: r,
         col: c,
-        isMine: false,
-        isRevealed: false,
-        isFlagged: false,
-        neighborMines: 0,
+        isMine: false, // 是否是地雷
+        isRevealed: false, // 是否已揭开
+        isFlagged: false, // 是否已标记
+        neighborMines: 0, // 周围地雷数量
       };
     }
   }
 
-  // Place mines randomly
+  // 随机放置地雷
   let minesPlaced = 0;
   while (minesPlaced < mines) {
     const row = Math.floor(rng() * rows);
     const col = Math.floor(rng() * cols);
 
-    // Don't place mine if there's already one
+    // 如果已经有地雷，就不再放置
     if (!board[row][col].isMine) {
       board[row][col].isMine = true;
       minesPlaced++;
@@ -72,9 +72,9 @@ export function generateBoard(
 }
 
 /**
- * Calculate neighbor mines for each cell on the board
- * @param board - The game board
- * @returns Board with neighborMines calculated for each cell
+ * 计算游戏板上每个单元格周围的地雷数量
+ * @param board - 游戏板
+ * @returns 已计算每个单元格周围地雷数量的游戏板
  */
 export function calculateNumbers(board: Cell[][]): Cell[][] {
   const rows = board.length;
@@ -83,22 +83,22 @@ export function calculateNumbers(board: Cell[][]): Cell[][] {
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       if (board[r][c].isMine) {
-        continue; // Skip mines
+        continue; // 跳过地雷
       }
 
       let neighborCount = 0;
 
-      // Check all 8 surrounding cells
+      // 检查周围8个单元格
       for (let dr = -1; dr <= 1; dr++) {
         for (let dc = -1; dc <= 1; dc++) {
           if (dr === 0 && dc === 0) {
-            continue; // Skip the cell itself
+            continue; // 跳过单元格本身
           }
 
           const newRow = r + dr;
           const newCol = c + dc;
 
-          // Check bounds
+          // 检查边界
           if (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < cols) {
             if (board[newRow][newCol].isMine) {
               neighborCount++;
@@ -115,11 +115,11 @@ export function calculateNumbers(board: Cell[][]): Cell[][] {
 }
 
 /**
- * Ensure first click is safe by moving mines if necessary
- * @param board - The game board
- * @param firstClickRow - Row of first click
- * @param firstClickCol - Column of first click
- * @returns Safe board with first click guaranteed to be safe
+ * 确保第一次点击是安全的，必要时移动地雷
+ * @param board - 游戏板
+ * @param firstClickRow - 第一次点击的行
+ * @param firstClickCol - 第一次点击的列
+ * @returns 保证第一次点击安全的游戏板
  */
 export function ensureFirstClickSafety(
   board: Cell[][],
@@ -129,11 +129,11 @@ export function ensureFirstClickSafety(
   const rows = board.length;
   const cols = board[0].length;
 
-  // Check if first click is already safe (no mine and no mines around)
+  // 检查第一次点击是否已经安全（不是地雷且周围没有地雷）
   let isSafe = !board[firstClickRow][firstClickCol].isMine;
 
   if (isSafe) {
-    // Check if any neighbors are mines
+    // 检查是否有邻居是地雷
     for (let dr = -1; dr <= 1; dr++) {
       for (let dc = -1; dc <= 1; dc++) {
         const newRow = firstClickRow + dr;
@@ -154,18 +154,18 @@ export function ensureFirstClickSafety(
     }
   }
 
-  // If already safe, return the board as is
+  // 如果已经安全，直接返回游戏板
   if (isSafe) {
     return board;
   }
 
-  // Find a safe location to move mines from
-  // A safe location is any cell that is:
-  // - Not the first click
-  // - Not a neighbor of the first click
-  // - Not already a mine (we want to move a mine there)
+  // 找到安全的位置来移动地雷
+  // 安全位置是指：
+  // - 不是第一次点击的位置
+  // - 不是第一次点击的邻居
+  // - 还不是地雷（我们要把地雷移到这里）
 
-  // First, collect all unsafe cells (first click and its neighbors)
+  // 首先，收集所有不安全的单元格（第一次点击及其邻居）
   const unsafeCells = new Set<string>();
   for (let dr = -1; dr <= 1; dr++) {
     for (let dc = -1; dc <= 1; dc++) {
@@ -183,7 +183,7 @@ export function ensureFirstClickSafety(
     }
   }
 
-  // Find mines in unsafe area and safe cells without mines
+  // 找到不安全区域中的地雷和没有地雷的安全单元格
   const minesInUnsafeArea: { row: number; col: number }[] = [];
   const safeCellsWithoutMines: { row: number; col: number }[] = [];
 
@@ -192,47 +192,47 @@ export function ensureFirstClickSafety(
       const cellKey = `${r},${c}`;
 
       if (board[r][c].isMine && unsafeCells.has(cellKey)) {
-        // This is a mine in the unsafe area - we need to move it
+        // 这是不安全区域中的地雷 - 我们需要移动它
         minesInUnsafeArea.push({ row: r, col: c });
       } else if (!board[r][c].isMine && !unsafeCells.has(cellKey)) {
-        // This is a safe cell without a mine - we can place a mine here
+        // 这是没有地雷的安全单元格 - 我们可以在这里放置地雷
         safeCellsWithoutMines.push({ row: r, col: c });
       }
     }
   }
 
-  // Move mines from unsafe area to safe cells
+  // 将地雷从不安全区域移动到安全单元格
   const movesToMake = Math.min(minesInUnsafeArea.length, safeCellsWithoutMines.length);
 
   for (let i = 0; i < movesToMake; i++) {
     const fromMine = minesInUnsafeArea[i];
     const toCell = safeCellsWithoutMines[i];
 
-    // Move the mine
+    // 移动地雷
     board[fromMine.row][fromMine.col].isMine = false;
     board[toCell.row][toCell.col].isMine = true;
   }
 
-  // Recalculate neighbor numbers
+  // 重新计算邻居数字
   return calculateNumbers(board);
 }
 
 /**
- * Validate custom difficulty settings
- * @param rows - Number of rows
- * @param cols - Number of columns
- * @param mines - Number of mines
- * @returns true if valid, false if invalid
+ * 验证自定义难度设置
+ * @param rows - 行数
+ * @param cols - 列数
+ * @param mines - 地雷数量
+ * @returns 如果有效返回true，否则返回false
  */
 export function validateCustomDifficulty(
   rows: number,
   cols: number,
   mines: number
 ): boolean {
-  const minSize = 5;
-  const maxSize = 50;
+  const minSize = 5; // 最小尺寸
+  const maxSize = 50; // 最大尺寸
 
-  // Check board size limits
+  // 检查游戏板大小限制
   if (rows < minSize || rows > maxSize) {
     return false;
   }
@@ -241,12 +241,12 @@ export function validateCustomDifficulty(
     return false;
   }
 
-  // Check mine count (must be at least 1)
+  // 检查地雷数量（至少为1）
   if (mines < 1) {
     return false;
   }
 
-  // Check mine density (must be less than 99%)
+  // 检查地雷密度（必须小于99%）
   const totalCells = rows * cols;
   const maxMines = Math.floor(totalCells * 0.99);
 

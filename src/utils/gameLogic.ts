@@ -1,28 +1,28 @@
 import { Cell } from '../types/game';
 
 /**
- * Get all valid neighbor cells for a given position
- * @param board - The game board
- * @param row - Row index
- * @param col - Column index
- * @returns Array of neighboring cells (up to 8 for interior cells)
+ * 获取给定位置的所有有效邻居单元格
+ * @param board - 游戏板
+ * @param row - 行索引
+ * @param col - 列索引
+ * @returns 邻居单元格数组（内部单元格最多8个）
  */
 export function getNeighbors(board: Cell[][], row: number, col: number): Cell[] {
   const rows = board.length;
   const cols = board[0].length;
   const neighbors: Cell[] = [];
 
-  // Check all 8 directions
+  // 检查所有8个方向
   for (let dr = -1; dr <= 1; dr++) {
     for (let dc = -1; dc <= 1; dc++) {
       if (dr === 0 && dc === 0) {
-        continue; // Skip the cell itself
+        continue; // 跳过单元格本身
       }
 
       const newRow = row + dr;
       const newCol = col + dc;
 
-      // Check boundaries
+      // 检查边界
       if (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < cols) {
         neighbors.push(board[newRow][newCol]);
       }
@@ -33,46 +33,46 @@ export function getNeighbors(board: Cell[][], row: number, col: number): Cell[] 
 }
 
 /**
- * Reveal a cell on the board
- * If the cell has no neighbor mines, recursively reveal all neighbors
- * @param board - The game board
- * @param row - Row index of cell to reveal
- * @param col - Column index of cell to reveal
- * @returns Modified board with cells revealed
+ * 揭开游戏板上的一个单元格
+ * 如果单元格周围没有地雷，递归揭开所有邻居
+ * @param board - 游戏板
+ * @param row - 要揭开的单元格的行索引
+ * @param col - 要揭开的单元格的列索引
+ * @returns 已修改的游戏板，包含已揭开的单元格
  */
 export function revealCell(board: Cell[][], row: number, col: number): Cell[][] {
   const rows = board.length;
   const cols = board[0].length;
 
-  // Check boundaries
+  // 检查边界
   if (row < 0 || row >= rows || col < 0 || col >= cols) {
     return board;
   }
 
   const cell = board[row][col];
 
-  // Don't reveal flagged or already revealed cells
+  // 不揭开已标记或已揭开的单元格
   if (cell.isFlagged || cell.isRevealed) {
     return board;
   }
 
-  // Reveal the cell
+  // 揭开单元格
   cell.isRevealed = true;
 
-  // If cell is a mine, we're done (game over)
+  // 如果单元格是地雷，游戏结束
   if (cell.isMine) {
     return board;
   }
 
-  // If cell has neighbor mines, reveal only this cell
+  // 如果单元格周围有地雷，只揭开这个单元格
   if (cell.neighborMines > 0) {
     return board;
   }
 
-  // Cell is empty (neighborMines == 0), recursively reveal all neighbors
+  // 单元格是空的（周围没有地雷），递归揭开所有邻居
   const neighbors = getNeighbors(board, row, col);
   for (const neighbor of neighbors) {
-    // Only reveal unrevealed, non-flagged cells
+    // 只揭开未揭开、未标记的单元格
     if (!neighbor.isRevealed && !neighbor.isFlagged) {
       revealCell(board, neighbor.row, neighbor.col);
     }
@@ -82,11 +82,11 @@ export function revealCell(board: Cell[][], row: number, col: number): Cell[][] 
 }
 
 /**
- * Check if the game has been won
- * Win condition: All non-mine cells are revealed
- * @param board - The game board
- * @param totalMines - Total number of mines on the board
- * @returns true if game is won, false otherwise
+ * 检查游戏是否获胜
+ * 获胜条件：所有非地雷单元格都已揭开
+ * @param board - 游戏板
+ * @param totalMines - 游戏板上的地雷总数
+ * @returns 如果游戏获胜返回true，否则返回false
  */
 export function checkWin(board: Cell[][], totalMines: number): boolean {
   const rows = board.length;
@@ -104,15 +104,15 @@ export function checkWin(board: Cell[][], totalMines: number): boolean {
     }
   }
 
-  // Win if all non-mine cells are revealed
+  // 如果所有非地雷单元格都已揭开，游戏获胜
   return revealedCount === nonMineCells;
 }
 
 /**
- * Check if the game has been lost
- * Loss condition: Any mine cell has been revealed
- * @param board - The game board
- * @returns true if game is lost, false otherwise
+ * 检查游戏是否失败
+ * 失败条件：任何地雷单元格被揭开
+ * @param board - 游戏板
+ * @returns 如果游戏失败返回true，否则返回false
  */
 export function checkLoss(board: Cell[][]): boolean {
   const rows = board.length;
@@ -130,24 +130,24 @@ export function checkLoss(board: Cell[][]): boolean {
 }
 
 /**
- * Get flagged neighbor cells for a given position
- * Used in chord operations to determine which cells to auto-reveal
- * @param board - The game board
- * @param row - Row index
- * @param col - Column index
- * @returns Array of flagged neighbor cells
+ * 获取给定位置的已标记邻居单元格
+ * 用于和弦操作，确定哪些单元格需要自动揭开
+ * @param board - 游戏板
+ * @param row - 行索引
+ * @param col - 列索引
+ * @returns 已标记的邻居单元格数组
  */
 export function getChordCells(board: Cell[][], row: number, col: number): Cell[] {
   const neighbors = getNeighbors(board, row, col);
   
-  // Filter to only flagged neighbors
+  // 过滤出已标记的邻居
   return neighbors.filter((neighbor) => neighbor.isFlagged);
 }
 
 /**
- * Reveal all mines on the board (used in replay mode)
- * @param board - The game board
- * @returns Modified board with all mines revealed
+ * 揭开游戏板上的所有地雷（用于回放模式）
+ * @param board - 游戏板
+ * @returns 已修改的游戏板，包含所有已揭开的地雷
  */
 export function revealAllMines(board: Cell[][]): Cell[][] {
   const rows = board.length;
@@ -165,9 +165,9 @@ export function revealAllMines(board: Cell[][]): Cell[][] {
 }
 
 /**
- * Mark incorrectly flagged cells (used in replay mode)
- * @param board - The game board
- * @returns Array of incorrectly flagged cell positions
+ * 标记错误标记的单元格（用于回放模式）
+ * @param board - 游戏板
+ * @returns 错误标记的单元格位置数组
  */
 export function getWrongFlags(board: Cell[][]): { row: number; col: number }[] {
   const rows = board.length;

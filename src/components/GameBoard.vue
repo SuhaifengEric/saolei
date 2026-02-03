@@ -1,4 +1,8 @@
 <script setup lang="ts">
+/**
+ * 游戏板组件
+ * 负责渲染扫雷游戏的棋盘和处理用户交互
+ */
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import '../assets/styles/main.css';
 import { useI18n } from '../composables/useI18n';
@@ -7,36 +11,44 @@ import { getWrongFlags } from '../utils/gameLogic';
 import { canChord } from '../utils/chordLogic';
 import { playSound } from '../utils/audioManager';
 
+// 使用国际化组合式函数
 const { language } = useI18n();
 
+// 组件属性
 interface Props {
-  board: Cell[][];
-  gameState: string;
-  difficulty: Difficulty | null;
+  board: Cell[][]; // 游戏板数据
+  gameState: string; // 游戏状态：initial, playing, won, lost
+  difficulty: Difficulty | null; // 游戏难度
 }
 
+// 组件事件
 const emit = defineEmits<{
-  'cell-revealed': [row: number, col: number];
-  'cell-flagged': [row: number, col: number];
-  'chord-triggered': [row: number, col: number];
-  'game-won': [];
-  'game-lost': [];
+  'cell-revealed': [row: number, col: number]; // 单元格被揭开
+  'cell-flagged': [row: number, col: number]; // 单元格被标记
+  'chord-triggered': [row: number, col: number]; // 和弦操作被触发
+  'game-won': []; // 游戏获胜
+  'game-lost': []; // 游戏失败
 }>();
 
+// 属性默认值
 const props = withDefaults(defineProps<Props>(), {
   board: () => [],
   gameState: 'initial',
   difficulty: null,
 });
 
+// 焦点单元格
 const focusedCell = ref<{ row: number; col: number } | null>(null);
+// 回放模式状态
 const isReplayMode = ref(false);
+// 错误标记的单元格
 const wrongFlags = ref<{ row: number; col: number }[]>([]);
 
-// Check if game is in replay mode
+// 监听游戏状态变化，检查是否进入回放模式
 watch(() => props.gameState, (newState) => {
   if (newState === 'lost') {
     isReplayMode.value = true;
+    // 获取错误标记的单元格
     wrongFlags.value = getWrongFlags(props.board);
   } else {
     isReplayMode.value = false;
@@ -44,9 +56,7 @@ watch(() => props.gameState, (newState) => {
   }
 }, { immediate: true });
 
-
-
-// Generate grid style for the board
+// 生成游戏板的网格样式
 const gridStyle = computed(() => {
   if (!props.board.length) return {};
   const cols = props.board[0].length;
@@ -55,7 +65,7 @@ const gridStyle = computed(() => {
   };
 });
 
-// Get cell class based on state
+// 根据单元格状态获取CSS类名
 const getCellClass = (cell: Cell): string => {
   const classes = ['cell'];
   
@@ -75,12 +85,12 @@ const getCellClass = (cell: Cell): string => {
     }
   }
   
-  // Check if this is a wrong flag
+  // 检查是否是错误的标记
   if (isReplayMode.value && cell.isFlagged && !cell.isMine) {
     classes.push('cell-wrong-flag');
   }
   
-  // Add reveal animation class
+  // 添加揭开动画类
   if (cell.isRevealed) {
     classes.push('animate-reveal');
   }
@@ -88,9 +98,9 @@ const getCellClass = (cell: Cell): string => {
   return classes.join(' ');
 };
 
-// Get cell content
+// 获取单元格显示内容
 const getCellContent = (cell: Cell): string => {
-  // In replay mode, show X on wrong flags
+  // 在回放模式下，错误标记显示叉号
   if (isReplayMode.value && cell.isFlagged && !cell.isMine) {
     return '❌';
   }

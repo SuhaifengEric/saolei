@@ -1,18 +1,25 @@
+/**
+ * 国际化（i18n）组合式函数
+ * 提供多语言支持和翻译功能
+ */
 import { ref, computed } from 'vue';
 
+// 语言类型
 export type Language = 'zh' | 'en';
 
+// 翻译接口
 interface Translations {
   [key: string]: string;
 }
 
+// 中文翻译
 const zh: Translations = {
-  // App
+  // 应用
   'app.title': '💣 扫雷',
   'app.theme.dark': '深色模式',
   'app.theme.light': '浅色模式',
 
-  // Game Controls
+  // 游戏控制
   'controls.title': '游戏控制',
   'controls.difficulty': '选择难度：',
   'controls.beginner': '初级',
@@ -32,17 +39,17 @@ const zh: Translations = {
   'controls.error.mines.min': '至少需要 1 个地雷',
   'controls.error.mines.max': '此棋盘大小最多 {max} 个地雷',
 
-  // Timer
+  // 计时器
   'timer.label': '时间',
 
-  // Game Status
+  // 游戏状态
   'status.initial': '按 F2 或点击"新游戏"开始',
   'status.playing': '游戏进行中...',
   'status.playing.keyboard': '游戏进行中... (键盘已激活)',
   'status.won': '🎉 恭喜你赢了！',
   'status.lost': '💥 游戏结束！下次好运！',
 
-  // Stats
+  // 统计
   'stats.title': '游戏统计',
   'stats.totalGames': '总游戏数',
   'stats.wins': '胜利',
@@ -57,7 +64,7 @@ const zh: Translations = {
   'stats.difficulty.expert': '高级',
   'stats.difficulty.custom': '自定义',
 
-  // Game Board
+  // 游戏板
   'board.empty': '开始新游戏！',
   'board.audio.mute': '静音',
   'board.audio.unmute': '取消静音',
@@ -68,7 +75,7 @@ const zh: Translations = {
   'board.cell.mine': '地雷',
   'board.cell.hidden': '隐藏格子',
 
-  // Footer
+  // 页脚
   'footer.leftClick': '左键：揭开',
   'footer.rightClick': '右键：标记',
   'footer.doubleClick': '双击：和弦',
@@ -77,19 +84,20 @@ const zh: Translations = {
   'footer.enter': '回车：揭开',
   'footer.space': '空格：标记',
 
-  // Language
+  // 语言
   'language.title': '语言',
   'language.zh': '中文',
   'language.en': 'English',
 };
 
+// 英文翻译
 const en: Translations = {
-  // App
+  // 应用
   'app.title': '💣 Minesweeper',
   'app.theme.dark': 'Dark Mode',
   'app.theme.light': 'Light Mode',
 
-  // Game Controls
+  // 游戏控制
   'controls.title': 'Game Controls',
   'controls.difficulty': 'Select Difficulty:',
   'controls.beginner': 'Beginner',
@@ -109,17 +117,17 @@ const en: Translations = {
   'controls.error.mines.min': 'At least 1 mine required',
   'controls.error.mines.max': 'Maximum {max} mines for this board size',
 
-  // Timer
+  // 计时器
   'timer.label': 'Time',
 
-  // Game Status
+  // 游戏状态
   'status.initial': 'Press F2 or click "New Game" to start',
   'status.playing': 'Game in progress...',
   'status.playing.keyboard': 'Game in progress... (Keyboard active)',
   'status.won': '🎉 Congratulations, you won!',
   'status.lost': '💥 Game over! Better luck next time!',
 
-  // Stats
+  // 统计
   'stats.title': 'Game Statistics',
   'stats.totalGames': 'Total Games',
   'stats.wins': 'Wins',
@@ -134,7 +142,7 @@ const en: Translations = {
   'stats.difficulty.expert': 'Expert',
   'stats.difficulty.custom': 'Custom',
 
-  // Game Board
+  // 游戏板
   'board.empty': 'Start a new game to begin!',
   'board.audio.mute': 'Mute',
   'board.audio.unmute': 'Unmute',
@@ -145,7 +153,7 @@ const en: Translations = {
   'board.cell.mine': 'Mine',
   'board.cell.hidden': 'Hidden cell',
 
-  // Footer
+  // 页脚
   'footer.leftClick': 'Left Click: Reveal',
   'footer.rightClick': 'Right Click: Flag',
   'footer.doubleClick': 'Double Click: Chord',
@@ -154,19 +162,33 @@ const en: Translations = {
   'footer.enter': 'Enter: Reveal',
   'footer.space': 'Space: Flag',
 
-  // Language
+  // 语言
   'language.title': 'Language',
   'language.zh': '中文',
   'language.en': 'English',
 };
 
+// 翻译集合
 const translations: Record<Language, Translations> = { zh, en };
 
+// 当前语言
 const currentLang = ref<Language>('zh');
 
+/**
+ * 国际化组合式函数
+ * 提供翻译、语言切换等功能
+ */
 export function useI18n() {
+  /**
+   * 翻译函数
+   * @param key - 翻译键
+   * @param params - 翻译参数
+   * @returns 翻译后的文本
+   */
   const t = (key: string, params?: Record<string, string | number>): string => {
+    // 获取翻译文本，如果没有找到则返回键本身
     let text = translations[currentLang.value][key] || key;
+    // 替换参数
     if (params) {
       Object.entries(params).forEach(([paramKey, value]) => {
         text = text.replace(`{${paramKey}}`, String(value));
@@ -175,16 +197,29 @@ export function useI18n() {
     return text;
   };
 
+  /**
+   * 设置语言
+   * @param lang - 要设置的语言
+   */
   const setLanguage = (lang: Language) => {
     currentLang.value = lang;
+    // 保存到本地存储
     localStorage.setItem('minesweeper_language', lang);
   };
 
+  /**
+   * 切换语言
+   * 在中文和英文之间切换
+   */
   const toggleLanguage = () => {
     const newLang = currentLang.value === 'zh' ? 'en' : 'zh';
     setLanguage(newLang);
   };
 
+  /**
+   * 初始化语言
+   * 从本地存储加载保存的语言设置
+   */
   const initializeLanguage = () => {
     const savedLang = localStorage.getItem('minesweeper_language') as Language;
     if (savedLang && translations[savedLang]) {
@@ -192,13 +227,14 @@ export function useI18n() {
     }
   };
 
+  // 计算属性：当前语言
   const language = computed(() => currentLang.value);
 
   return {
-    t,
-    setLanguage,
-    toggleLanguage,
-    initializeLanguage,
-    language,
+    t, // 翻译函数
+    setLanguage, // 设置语言
+    toggleLanguage, // 切换语言
+    initializeLanguage, // 初始化语言
+    language, // 当前语言
   };
 }
