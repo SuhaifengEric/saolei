@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import '../assets/styles/main.css';
+import { useI18n } from '../composables/useI18n';
 import type { Cell, Difficulty } from '../types/game';
 import { getWrongFlags } from '../utils/gameLogic';
 import { canChord } from '../utils/chordLogic';
-import { playSound, toggleMute as toggleAudioMute, isAudioMuted as getAudioMuted } from '../utils/audioManager';
+import { playSound } from '../utils/audioManager';
+
+const { language } = useI18n();
 
 interface Props {
   board: Cell[][];
@@ -28,7 +31,6 @@ const props = withDefaults(defineProps<Props>(), {
 
 const focusedCell = ref<{ row: number; col: number } | null>(null);
 const isReplayMode = ref(false);
-const isAudioMuted = ref(false);
 const wrongFlags = ref<{ row: number; col: number }[]>([]);
 
 // Check if game is in replay mode
@@ -42,16 +44,7 @@ watch(() => props.gameState, (newState) => {
   }
 }, { immediate: true });
 
-// Toggle audio mute
-const toggleMute = () => {
-  const muted = toggleAudioMute();
-  isAudioMuted.value = muted;
-};
 
-// Initialize audio mute state
-onMounted(() => {
-  isAudioMuted.value = getAudioMuted();
-});
 
 // Generate grid style for the board
 const gridStyle = computed(() => {
@@ -229,28 +222,13 @@ onUnmounted(() => {
 });
 </script>
 
-<script lang="ts">
-// Export for i18n access
-import { useI18n } from '../composables/useI18n';
-</script>
-
 <template>
   <div class="game-board-container">
-    <!-- Audio Toggle -->
-    <button
-      class="audio-toggle"
-      @click="toggleMute"
-      :title="isAudioMuted ? 'Unmute sounds' : 'Mute sounds'"
-      :aria-label="isAudioMuted ? 'Unmute sounds' : 'Mute sounds'"
-    >
-      {{ isAudioMuted ? '🔇' : '🔊' }}
-    </button>
-
     <div
       v-if="board.length === 0"
       class="empty-board"
     >
-      <p class="text-muted">Start a new game to begin!</p>
+      <p class="text-muted">{{ language === 'zh' ? '开始新游戏！' : 'Start a new game to begin!' }}</p>
     </div>
 
     <div
@@ -298,16 +276,16 @@ import { useI18n } from '../composables/useI18n';
       >
         <div class="replay-content">
           <div class="replay-icon">💥</div>
-          <h3 class="replay-title">Game Over</h3>
-          <p class="replay-message">Review your mistakes and try again!</p>
+          <h3 class="replay-title">{{ language === 'zh' ? '游戏结束' : 'Game Over' }}</h3>
+          <p class="replay-message">{{ language === 'zh' ? '查看错误并重试！' : 'Review your mistakes and try again!' }}</p>
           <div class="replay-legend">
             <div class="legend-item">
               <span class="legend-emoji">💣</span>
-              <span class="legend-text">Mines revealed</span>
+              <span class="legend-text">{{ language === 'zh' ? '显示的地雷' : 'Mines revealed' }}</span>
             </div>
             <div class="legend-item">
               <span class="legend-emoji">❌</span>
-              <span class="legend-text">Wrong flags</span>
+              <span class="legend-text">{{ language === 'zh' ? '错误的标记' : 'Wrong flags' }}</span>
             </div>
           </div>
         </div>

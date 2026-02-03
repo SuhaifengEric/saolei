@@ -6,11 +6,12 @@ import { useI18n } from './composables/useI18n';
 import { revealCell as revealCellLogic, checkWin, checkLoss, revealAllMines } from './utils/gameLogic';
 import { chord as chordLogic } from './utils/chordLogic';
 import { generateBoard, calculateNumbers, ensureFirstClickSafety } from './utils/boardGenerator';
-import { playSound } from './utils/audioManager';
+import { playSound, toggleMute as toggleAudioMuteFn, isAudioMuted as getAudioMuted } from './utils/audioManager';
 import GameBoard from './components/GameBoard.vue';
 import GameControls from './components/GameControls.vue';
 import Timer from './components/Timer.vue';
 import StatsPanel from './components/StatsPanel.vue';
+import StatsModal from './components/StatsModal.vue';
 import type { Difficulty } from './types/game';
 
 // Use i18n composable
@@ -28,6 +29,12 @@ const {
 
 // Theme state
 const isDarkTheme = ref(true);
+
+// Audio mute state
+const isAudioMuted = ref(false);
+
+// Stats modal state
+const showStatsModal = ref(false);
 
 // Stats panel ref
 const statsPanelRef = ref<InstanceType<typeof StatsPanel> | null>(null);
@@ -62,6 +69,17 @@ const initializeTheme = () => {
     isDarkTheme.value = true;
     document.documentElement.setAttribute('data-theme', 'dark');
   }
+};
+
+// Toggle audio mute
+const toggleAudioMute = () => {
+  const muted = toggleAudioMuteFn();
+  isAudioMuted.value = muted;
+};
+
+// Initialize audio mute state
+const initializeAudio = () => {
+  isAudioMuted.value = getAudioMuted();
 };
 
 // Start the timer
@@ -219,8 +237,9 @@ const gameStatusClass = computed(() => {
 onMounted(() => {
   initializeTheme();
   initializeLanguage();
+  initializeAudio();
   window.addEventListener('keydown', handleGlobalKeydown);
-  
+
   // Set initial difficulty (Beginner)
   handleNewGame({
     name: language.value === 'zh' ? '初级' : 'Beginner',
@@ -248,11 +267,19 @@ watch(isDarkTheme, (newValue) => {
     <header class="app-header">
       <div class="header-content">
         <h1 class="app-title">
-          <span class="title-icon">💣</span>
           {{ t('app.title') }}
         </h1>
-        
+
         <div class="header-controls">
+          <!-- Audio Toggle -->
+          <button
+            class="header-btn audio-btn"
+            @click="toggleAudioMute"
+            :title="isAudioMuted ? (language === 'zh' ? '取消静音' : 'Unmute') : (language === 'zh' ? '静音' : 'Mute')"
+          >
+            {{ isAudioMuted ? '🔇' : '🔊' }}
+          </button>
+
           <!-- Language Toggle -->
           <button
             class="lang-toggle"
@@ -261,10 +288,10 @@ watch(isDarkTheme, (newValue) => {
           >
             {{ language === 'zh' ? 'EN' : '中' }}
           </button>
-          
+
           <!-- Theme Toggle -->
-          <button 
-            class="toggle-btn" 
+          <button
+            class="toggle-btn"
             :data-active="isDarkTheme"
             @click="toggleTheme"
             :aria-label="isDarkTheme ? t('app.theme.light') : t('app.theme.dark')"
@@ -280,14 +307,20 @@ watch(isDarkTheme, (newValue) => {
         <!-- Left Sidebar - Controls -->
         <aside class="sidebar-left">
           <GameControls @new-game="handleNewGame" />
-          
+
           <div class="timer-section card">
-            <Timer 
-              :seconds="gameState.timer" 
+            <Timer
+              :seconds="gameState.timer"
               :label="t('timer.label')"
               :show-label="true"
             />
           </div>
+
+          <!-- Stats Entry Button -->
+          <button class="stats-entry-btn card" @click="showStatsModal = true">
+            <span class="stats-icon">📊</span>
+            <span class="stats-text">{{ language === 'zh' ? '游戏统计' : 'Statistics' }}</span>
+          </button>
         </aside>
 
         <!-- Center - Game Board -->
@@ -309,13 +342,14 @@ watch(isDarkTheme, (newValue) => {
             @chord-triggered="handleChord"
           />
         </section>
-
-        <!-- Right Sidebar - Stats -->
-        <aside class="sidebar-right">
-          <StatsPanel ref="statsPanelRef" />
-        </aside>
       </div>
     </main>
+
+    <!-- Stats Modal -->
+    <StatsModal
+      v-if="showStatsModal"
+      @close="showStatsModal = false"
+    />
 
     <!-- Footer -->
     <footer class="app-footer">
@@ -406,6 +440,58 @@ watch(isDarkTheme, (newValue) => {
   border-color: var(--accent-primary);
 }
 
+.header-btn {
+  width: 36px;
+  height: 36px;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.header-btn:hover {
+  background-color: var(--bg-elevated);
+  border-color: var(--accent-primary);
+  transform: scale(1.05);
+}
+
+/* Stats Entry Button */
+.stats-entry-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  width: 100%;
+}
+
+.stats-entry-btn:hover {
+  background-color: var(--bg-tertiary);
+  border-color: var(--accent-primary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.stats-icon {
+  font-size: 1.5rem;
+}
+
+.stats-text {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+}
+
 /* Main Content */
 .app-main {
   flex: 1;
@@ -415,11 +501,12 @@ watch(isDarkTheme, (newValue) => {
 
 .main-layout {
   display: grid;
-  grid-template-columns: 300px 1fr 320px;
+  grid-template-columns: 300px 1fr;
   gap: var(--space-4);
-  max-width: 1600px;
+  max-width: 1400px;
   margin: 0 auto;
-  height: calc(100vh - 200px);
+  height: calc(100vh - 140px);
+  min-height: 400px;
 }
 
 /* Sidebar */
@@ -467,8 +554,9 @@ watch(isDarkTheme, (newValue) => {
 .app-footer {
   background-color: var(--bg-secondary);
   border-top: 1px solid var(--border-color);
-  padding: var(--space-2) var(--space-4);
+  padding: var(--space-1) var(--space-4);
   box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
 }
 
 .footer-content {
@@ -477,35 +565,40 @@ watch(isDarkTheme, (newValue) => {
   align-items: center;
   max-width: 1600px;
   margin: 0 auto;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: var(--space-2);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.footer-content::-webkit-scrollbar {
+  display: none;
 }
 
 .footer-info,
 .footer-shortcuts {
   display: flex;
-  gap: var(--space-3);
+  gap: var(--space-2);
   align-items: center;
-  font-size: var(--font-size-sm);
+  font-size: 0.75rem;
   color: var(--text-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .info-item,
 .shortcut {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   font-weight: var(--font-weight-medium);
 }
 
 /* Responsive Design */
 @media (max-width: 1200px) {
   .main-layout {
-    grid-template-columns: 280px 1fr;
-  }
-
-  .sidebar-right {
-    display: none;
+    grid-template-columns: 260px 1fr;
   }
 }
 
@@ -514,7 +607,7 @@ watch(isDarkTheme, (newValue) => {
     grid-template-columns: 1fr;
     grid-template-rows: auto 1fr auto;
     height: auto;
-    min-height: calc(100vh - 200px);
+    min-height: calc(100vh - 140px);
   }
 
   .sidebar-left {
@@ -550,8 +643,13 @@ watch(isDarkTheme, (newValue) => {
 
   .footer-info,
   .footer-shortcuts {
-    font-size: 0.75rem;
-    gap: var(--space-2);
+    font-size: 0.7rem;
+    gap: var(--space-1);
+  }
+
+  .info-item,
+  .shortcut {
+    gap: 1px;
   }
 }
 
@@ -569,16 +667,17 @@ watch(isDarkTheme, (newValue) => {
   }
 
   .footer-content {
-    flex-direction: column;
-    align-items: flex-start;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-1);
   }
-  
+
   .footer-info,
   .footer-shortcuts {
-    flex-direction: column;
+    flex-direction: row;
     gap: var(--space-1);
-    align-items: flex-start;
-    font-size: 0.75rem;
+    align-items: center;
+    font-size: 0.65rem;
   }
 }
 
