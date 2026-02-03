@@ -123,12 +123,13 @@ const getCellContent = (cell: Cell): string => {
 
 // Handle left click - reveal cell
 const handleCellClick = (row: number, col: number) => {
-  if (props.gameState !== 'playing') return;
-  
+  // Allow click in both 'initial' and 'playing' states
+  if (props.gameState !== 'playing' && props.gameState !== 'initial') return;
+
   const cell = props.board[row][col];
-  
+
   if (cell.isRevealed || cell.isFlagged) return;
-  
+
   playSound('click');
   emit('cell-revealed', row, col);
 };
@@ -136,13 +137,14 @@ const handleCellClick = (row: number, col: number) => {
 // Handle right click - flag cell
 const handleCellRightClick = (event: MouseEvent, row: number, col: number) => {
   event.preventDefault();
-  
-  if (props.gameState !== 'playing') return;
-  
+
+  // Allow flag in both 'initial' and 'playing' states
+  if (props.gameState !== 'playing' && props.gameState !== 'initial') return;
+
   const cell = props.board[row][col];
-  
+
   if (cell.isRevealed) return;
-  
+
   playSound('flag');
   emit('cell-flagged', row, col);
 };
@@ -227,6 +229,11 @@ onUnmounted(() => {
 });
 </script>
 
+<script lang="ts">
+// Export for i18n access
+import { useI18n } from '../composables/useI18n';
+</script>
+
 <template>
   <div class="game-board-container">
     <!-- Audio Toggle -->
@@ -238,21 +245,21 @@ onUnmounted(() => {
     >
       {{ isAudioMuted ? '🔇' : '🔊' }}
     </button>
-    
-    <div 
+
+    <div
       v-if="board.length === 0"
       class="empty-board"
     >
       <p class="text-muted">Start a new game to begin!</p>
     </div>
-    
-    <div 
+
+    <div
       v-else
       class="game-board-wrapper"
       :class="{ 'replay-mode': isReplayMode }"
     >
-      <div 
-        class="game-board" 
+      <div
+        class="game-board"
         :style="gridStyle"
         role="grid"
         tabindex="0"
@@ -283,7 +290,7 @@ onUnmounted(() => {
           </div>
         </div>
       </div>
-      
+
       <!-- Replay Mode Overlay -->
       <div
         v-if="isReplayMode"

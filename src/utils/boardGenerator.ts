@@ -1,19 +1,24 @@
 import { Cell } from '../types/game';
-import seededRandomLib from 'seeded-random';
 
 /**
- * Create a seeded random number generator that produces a sequence of random numbers
+ * Simple seeded random number generator (Mulberry32 algorithm)
+ * Browser-compatible, no external dependencies
  * @param seed - Base seed for the sequence
  * @returns Function that returns random numbers in [0, 1)
  */
 function createSeededGenerator(seed: string): () => number {
-  let counter = 0;
+  // Convert string seed to a numeric seed
+  let state = 0;
+  for (let i = 0; i < seed.length; i++) {
+    state = (state * 31 + seed.charCodeAt(i)) >>> 0;
+  }
 
+  // Mulberry32 algorithm
   return () => {
-    // Use the counter to generate different random numbers from the same seed
-    const value = seededRandomLib.decimal(`${seed}-${counter}`);
-    counter++;
-    return value;
+    state += 0x6D2B79F5;
+    let t = Math.imul(state ^ state >>> 15, state | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
   };
 }
 

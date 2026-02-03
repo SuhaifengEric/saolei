@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import '../assets/styles/main.css';
+import { useI18n } from '../composables/useI18n';
+
+const { t, language } = useI18n();
 
 interface GameRecord {
   id: string;
@@ -106,7 +109,7 @@ const addGameRecord = (difficulty: string, result: 'won' | 'lost', time: number)
 
 // Clear all stats
 const clearStats = () => {
-  if (confirm('Are you sure you want to clear all statistics?')) {
+  if (confirm(language.value === 'zh' ? '确定要清除所有统计数据吗？' : 'Are you sure you want to clear all statistics?')) {
     stats.value = {
       totalGames: 0,
       wins: 0,
@@ -135,7 +138,8 @@ const formatTime = (seconds: number): string => {
 // Format date for display
 const formatDate = (timestamp: number): string => {
   const date = new Date(timestamp);
-  return date.toLocaleDateString('en-US', {
+  const locale = language.value === 'zh' ? 'zh-CN' : 'en-US';
+  return date.toLocaleDateString(locale, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -169,26 +173,26 @@ defineExpose({
 <template>
   <div class="stats-panel card">
     <div class="stats-header">
-      <h2 class="text-xl font-semibold">Statistics</h2>
-      <button 
-        class="btn btn-sm" 
+      <h2 class="text-xl font-semibold">{{ t('stats.title') }}</h2>
+      <button
+        class="btn btn-sm"
         @click="showDetails = !showDetails"
         :aria-label="showDetails ? 'Hide details' : 'Show details'"
       >
-        {{ showDetails ? 'Hide' : 'Details' }}
+        {{ showDetails ? (language === 'zh' ? '隐藏' : 'Hide') : (language === 'zh' ? '详情' : 'Details') }}
       </button>
     </div>
 
     <div class="stats-summary">
       <div class="stat-item">
-        <div class="stat-label">Total Games</div>
+        <div class="stat-label">{{ t('stats.totalGames') }}</div>
         <div class="stat-value">{{ stats.totalGames }}</div>
       </div>
 
       <div class="stat-item">
-        <div class="stat-label">Win Rate</div>
-        <div 
-          class="stat-value" 
+        <div class="stat-label">{{ t('stats.winRate') }}</div>
+        <div
+          class="stat-value"
           :class="{ 'text-success': stats.winRate >= 50, 'text-mine': stats.winRate < 50 && stats.totalGames > 0 }"
         >
           {{ formattedWinRate }}%
@@ -196,7 +200,7 @@ defineExpose({
       </div>
 
       <div class="stat-item">
-        <div class="stat-label">Best Time</div>
+        <div class="stat-label">{{ t('stats.bestTime') }}</div>
         <div class="stat-value text-accent">
           {{ formatTime(stats.bestTime) }}
         </div>
@@ -206,42 +210,42 @@ defineExpose({
     <div v-if="showDetails" class="stats-details animate-slide-in">
       <div class="stats-breakdown">
         <div class="breakdown-item">
-          <span class="breakdown-label">Wins:</span>
+          <span class="breakdown-label">{{ t('stats.wins') }}:</span>
           <span class="breakdown-value text-success">{{ stats.wins }}</span>
         </div>
         <div class="breakdown-item">
-          <span class="breakdown-label">Losses:</span>
+          <span class="breakdown-label">{{ t('stats.losses') }}:</span>
           <span class="breakdown-value text-mine">{{ stats.losses }}</span>
         </div>
         <div v-if="stats.bestTime !== Infinity" class="breakdown-item">
-          <span class="breakdown-label">Best in:</span>
+          <span class="breakdown-label">{{ language === 'zh' ? '最佳：' : 'Best in:' }}</span>
           <span class="breakdown-value">{{ stats.bestTimeDifficulty }}</span>
         </div>
       </div>
 
       <div class="leaderboard-section">
         <div class="leaderboard-header">
-          <h3 class="text-lg font-semibold mb-2">Recent Games (Last 10)</h3>
-          <button 
-            class="btn btn-sm" 
+          <h3 class="text-lg font-semibold mb-2">{{ language === 'zh' ? '最近游戏 (前10)' : 'Recent Games (Last 10)' }}</h3>
+          <button
+            class="btn btn-sm"
             @click="clearStats"
             :class="{ 'text-muted': leaderboard.length === 0 }"
             :disabled="leaderboard.length === 0"
           >
-            Clear All
+            {{ language === 'zh' ? '清除全部' : 'Clear All' }}
           </button>
         </div>
 
         <div v-if="sortedLeaderboard.length === 0" class="empty-state">
-          No games played yet
+          {{ t('stats.noRecords') }}
         </div>
 
         <div v-else class="leaderboard-list">
-          <div 
-            v-for="(record, index) in sortedLeaderboard.slice(0, 10)" 
+          <div
+            v-for="(record, index) in sortedLeaderboard.slice(0, 10)"
             :key="record.id"
             class="leaderboard-item"
-            :class="{ 
+            :class="{
               'border-l-4 border-l-success': record.result === 'won',
               'border-l-4 border-l-mine': record.result === 'lost'
             }"
@@ -251,11 +255,11 @@ defineExpose({
               <span class="game-difficulty">{{ record.difficulty }}</span>
             </div>
             <div class="game-result">
-              <span 
+              <span
                 class="result-badge"
                 :class="record.result === 'won' ? 'result-won' : 'result-lost'"
               >
-                {{ record.result === 'won' ? 'Win' : 'Loss' }}
+                {{ record.result === 'won' ? (language === 'zh' ? '胜利' : 'Win') : (language === 'zh' ? '失败' : 'Loss') }}
               </span>
               <span class="game-time">{{ formatTime(record.time) }}</span>
             </div>

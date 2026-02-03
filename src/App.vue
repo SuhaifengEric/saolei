@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import './assets/styles/main.css';
 import { useGameState } from './composables/useGameState';
+import { useI18n } from './composables/useI18n';
 import { revealCell as revealCellLogic, checkWin, checkLoss, revealAllMines } from './utils/gameLogic';
 import { chord as chordLogic } from './utils/chordLogic';
 import { generateBoard, calculateNumbers, ensureFirstClickSafety } from './utils/boardGenerator';
@@ -11,6 +12,9 @@ import GameControls from './components/GameControls.vue';
 import Timer from './components/Timer.vue';
 import StatsPanel from './components/StatsPanel.vue';
 import type { Difficulty } from './types/game';
+
+// Use i18n composable
+const { t, toggleLanguage, initializeLanguage, language } = useI18n();
 
 // Use game state composable
 const {
@@ -187,13 +191,13 @@ const handleGlobalKeydown = (event: KeyboardEvent) => {
 const gameStatusText = computed(() => {
   switch (gameState.value.status) {
     case 'initial':
-      return 'Press F2 or click "New Game" to start';
+      return t('status.initial');
     case 'playing':
-      return keyboardNavActive.value ? 'Game in progress... (Keyboard active)' : 'Game in progress...';
+      return keyboardNavActive.value ? t('status.playing.keyboard') : t('status.playing');
     case 'won':
-      return '🎉 Congratulations, you won!';
+      return t('status.won');
     case 'lost':
-      return '💥 Game over! Better luck next time!';
+      return t('status.lost');
     default:
       return '';
   }
@@ -214,11 +218,12 @@ const gameStatusClass = computed(() => {
 // Initialize on mount
 onMounted(() => {
   initializeTheme();
+  initializeLanguage();
   window.addEventListener('keydown', handleGlobalKeydown);
   
   // Set initial difficulty (Beginner)
   handleNewGame({
-    name: 'Beginner',
+    name: language.value === 'zh' ? '初级' : 'Beginner',
     rows: 9,
     cols: 9,
     mines: 10,
@@ -244,17 +249,26 @@ watch(isDarkTheme, (newValue) => {
       <div class="header-content">
         <h1 class="app-title">
           <span class="title-icon">💣</span>
-          Minesweeper
+          {{ t('app.title') }}
         </h1>
         
         <div class="header-controls">
+          <!-- Language Toggle -->
+          <button
+            class="lang-toggle"
+            @click="toggleLanguage"
+            :title="t('language.title')"
+          >
+            {{ language === 'zh' ? 'EN' : '中' }}
+          </button>
+          
           <!-- Theme Toggle -->
           <button 
             class="toggle-btn" 
             :data-active="isDarkTheme"
             @click="toggleTheme"
-            :aria-label="isDarkTheme ? 'Switch to light mode' : 'Switch to dark mode'"
-            :title="isDarkTheme ? 'Switch to light mode' : 'Switch to dark mode'"
+            :aria-label="isDarkTheme ? t('app.theme.light') : t('app.theme.dark')"
+            :title="isDarkTheme ? t('app.theme.light') : t('app.theme.dark')"
           />
         </div>
       </div>
@@ -270,7 +284,7 @@ watch(isDarkTheme, (newValue) => {
           <div class="timer-section card">
             <Timer 
               :seconds="gameState.timer" 
-              label="Time"
+              :label="t('timer.label')"
               :show-label="true"
             />
           </div>
@@ -307,15 +321,15 @@ watch(isDarkTheme, (newValue) => {
     <footer class="app-footer">
       <div class="footer-content">
         <div class="footer-info">
-          <span class="info-item">Left Click: Reveal</span>
-          <span class="info-item">Right Click: Flag</span>
-          <span class="info-item">Double Click: Chord</span>
+          <span class="info-item">{{ t('footer.leftClick') }}</span>
+          <span class="info-item">{{ t('footer.rightClick') }}</span>
+          <span class="info-item">{{ t('footer.doubleClick') }}</span>
         </div>
         <div class="footer-shortcuts">
-          <span class="shortcut">F2: New Game</span>
-          <span class="shortcut">Arrows: Navigate</span>
-          <span class="shortcut">Enter: Reveal</span>
-          <span class="shortcut">Space: Flag</span>
+          <span class="shortcut">{{ t('footer.f2') }}</span>
+          <span class="shortcut">{{ t('footer.arrows') }}</span>
+          <span class="shortcut">{{ t('footer.enter') }}</span>
+          <span class="shortcut">{{ t('footer.space') }}</span>
         </div>
       </div>
     </footer>
@@ -373,6 +387,23 @@ watch(isDarkTheme, (newValue) => {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+}
+
+.lang-toggle {
+  padding: 6px 12px;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.lang-toggle:hover {
+  background-color: var(--bg-elevated);
+  border-color: var(--accent-primary);
 }
 
 /* Main Content */

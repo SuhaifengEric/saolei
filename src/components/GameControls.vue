@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import '../assets/styles/main.css';
+import { useI18n } from '../composables/useI18n';
 import type { Difficulty } from '../types/game';
+
+const { t, language } = useI18n();
 
 interface CustomDifficulty {
   rows: number;
@@ -26,25 +29,25 @@ const customDifficulty = ref<CustomDifficulty>({
 
 const difficulties: Record<DifficultyLevel, Difficulty> = {
   beginner: {
-    name: 'Beginner',
+    name: language.value === 'zh' ? '初级' : 'Beginner',
     rows: 9,
     cols: 9,
     mines: 10,
   },
   intermediate: {
-    name: 'Intermediate',
+    name: language.value === 'zh' ? '中级' : 'Intermediate',
     rows: 16,
     cols: 16,
     mines: 40,
   },
   expert: {
-    name: 'Expert',
+    name: language.value === 'zh' ? '高级' : 'Expert',
     rows: 16,
     cols: 30,
     mines: 99,
   },
   custom: {
-    name: 'Custom',
+    name: language.value === 'zh' ? '自定义' : 'Custom',
     rows: 16,
     cols: 30,
     mines: 99,
@@ -67,13 +70,21 @@ const validateCustomDifficulty = computed(() => {
 watch([customDifficulty, showCustom], () => {
   if (selectedDifficulty.value === 'custom' && validateCustomDifficulty.value.valid) {
     difficulties.custom = {
-      name: 'Custom',
+      name: language.value === 'zh' ? '自定义' : 'Custom',
       rows: customDifficulty.value.rows,
       cols: customDifficulty.value.cols,
       mines: customDifficulty.value.mines,
     };
   }
 }, { deep: true });
+
+// Watch language changes to update difficulty names
+watch(language, (newLang) => {
+  difficulties.beginner.name = newLang === 'zh' ? '初级' : 'Beginner';
+  difficulties.intermediate.name = newLang === 'zh' ? '中级' : 'Intermediate';
+  difficulties.expert.name = newLang === 'zh' ? '高级' : 'Expert';
+  difficulties.custom.name = newLang === 'zh' ? '自定义' : 'Custom';
+});
 
 // Start a new game with selected difficulty
 const startNewGame = () => {
@@ -107,7 +118,7 @@ const applyCustomDifficulty = () => {
   if (validateCustomDifficulty.value.valid) {
     selectedDifficulty.value = 'custom';
     difficulties.custom = {
-      name: 'Custom',
+      name: language.value === 'zh' ? '自定义' : 'Custom',
       rows: customDifficulty.value.rows,
       cols: customDifficulty.value.cols,
       mines: customDifficulty.value.mines,
@@ -120,18 +131,18 @@ const applyCustomDifficulty = () => {
 const validationError = computed(() => {
   const { rows, cols, mines } = customDifficulty.value;
   const maxMines = Math.floor((rows * cols) * 0.85);
-  
+
   if (rows < 5 || rows > 30) {
-    return 'Rows must be between 5 and 30';
+    return t('controls.error.rows');
   }
   if (cols < 5 || cols > 30) {
-    return 'Cols must be between 5 and 30';
+    return t('controls.error.cols');
   }
   if (mines < 1) {
-    return 'At least 1 mine required';
+    return t('controls.error.mines.min');
   }
   if (mines > maxMines) {
-    return `Maximum ${maxMines} mines for this board size`;
+    return t('controls.error.mines.max', { max: maxMines });
   }
   return '';
 });
@@ -140,11 +151,11 @@ const validationError = computed(() => {
 <template>
   <div class="game-controls">
     <div class="controls-header">
-      <h2 class="text-xl font-semibold">Game Controls</h2>
+      <h2 class="text-xl font-semibold">{{ t('controls.title') }}</h2>
     </div>
 
     <div class="difficulty-selector">
-      <div class="difficulty-label">Select Difficulty:</div>
+      <div class="difficulty-label">{{ t('controls.difficulty') }}</div>
       <div class="difficulty-buttons">
         <button
           v-for="(diff, level) in difficulties"
@@ -161,17 +172,17 @@ const validationError = computed(() => {
           :class="{ 'btn-primary': selectedDifficulty === 'custom' }"
           @click="showCustom = !showCustom"
         >
-          Custom
+          {{ t('controls.custom') }}
         </button>
       </div>
     </div>
 
     <!-- Custom Difficulty Panel -->
     <div v-if="showCustom" class="custom-panel animate-slide-in">
-      <div class="custom-title">Custom Difficulty</div>
+      <div class="custom-title">{{ t('controls.custom.title') }}</div>
       <div class="custom-inputs">
         <div class="input-group">
-          <label class="input-label">Rows (5-30)</label>
+          <label class="input-label">{{ t('controls.custom.rows') }}</label>
           <input
             v-model.number="customDifficulty.rows"
             type="number"
@@ -181,9 +192,9 @@ const validationError = computed(() => {
             @input="handleCustomInputChange"
           >
         </div>
-        
+
         <div class="input-group">
-          <label class="input-label">Cols (5-30)</label>
+          <label class="input-label">{{ t('controls.custom.cols') }}</label>
           <input
             v-model.number="customDifficulty.cols"
             type="number"
@@ -193,9 +204,9 @@ const validationError = computed(() => {
             @input="handleCustomInputChange"
           >
         </div>
-        
+
         <div class="input-group">
-          <label class="input-label">Mines</label>
+          <label class="input-label">{{ t('controls.custom.mines') }}</label>
           <input
             v-model.number="customDifficulty.mines"
             type="number"
@@ -209,29 +220,29 @@ const validationError = computed(() => {
           </span>
         </div>
       </div>
-      
+
       <button
         class="btn btn-primary w-full mt-2"
         :disabled="!validateCustomDifficulty.valid"
         @click="applyCustomDifficulty"
       >
-        Apply Custom Settings
+        {{ t('controls.custom.apply') }}
       </button>
     </div>
 
     <!-- New Game Button -->
     <button class="btn btn-primary new-game-btn" @click="startNewGame">
       <span class="btn-icon">🔄</span>
-      <span>New Game</span>
-      <span class="btn-shortcut">(F2)</span>
+      <span>{{ t('controls.newGame') }}</span>
+      <span class="btn-shortcut">{{ t('controls.newGame.shortcut') }}</span>
     </button>
 
     <!-- Current Difficulty Info -->
     <div class="current-info">
-      Current: 
+      {{ t('controls.current') }}
       <span class="current-value">
         {{ difficulties[selectedDifficulty].name }}
-        ({{ difficulties[selectedDifficulty].rows }}×{{ difficulties[selectedDifficulty].cols }}, {{ difficulties[selectedDifficulty].mines }} mines)
+        ({{ difficulties[selectedDifficulty].rows }}×{{ difficulties[selectedDifficulty].cols }}, {{ difficulties[selectedDifficulty].mines }} {{ language === 'zh' ? '地雷' : 'mines' }})
       </span>
     </div>
   </div>
