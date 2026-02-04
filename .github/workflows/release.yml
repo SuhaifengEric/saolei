@@ -1,0 +1,135 @@
+# 发布工作流
+# 当推送版本标签时自动构建并发布到 GitHub Release
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # 匹配 v1.0.0, v2.1.0 等版本标签
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  # 构建任务
+  build:
+    permissions:
+      contents: write  # 允许写入 GitHub Release
+    strategy:
+      fail-fast: false  # 一个平台失败不影响其他平台
+      matrix:
+        include:
+          # Windows 构建配置
+          - platform: 'windows-latest'
+            args: '--target x86_64-pc-windows-msvc'
+            name: 'Windows'
+          # macOS Intel 构建配置
+          - platform: 'macos-latest'
+            args: '--target x86_64-apple-darwin'
+            name: 'macOS Intel'
+          # macOS Apple Silicon 构建配置
+          - platform: 'macos-latest'
+            args: '--target aarch64-apple-darwin'
+            name: 'macOS Apple Silicon'
+          # Linux 构建配置
+          - platform: 'ubuntu-22.04'
+            args: '--target x86_64-unknown-linux-gnu'
+            name: 'Linux'
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      # 检出代码
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 安装 Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      # 安装 Rust
+      - name: Install Rust stable
+        uses: dtolnay/rust-action@stable
+        with:
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      # 安装 Linux 依赖
+      - name: Install dependencies (Ubuntu only)
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev patchelf
+
+      # 安装前端依赖
+      - name: Install frontend dependencies
+        run: npm install
+
+      # 使用 Tauri Action 构建应用
+      - name: Build the app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: '扫雷游戏 ${{ github.ref_name }}'
+          releaseBody: |
+            ## 扫雷游戏 ${{ github.ref_name }}
+
+            ### 下载说明
+            - **Windows 用户**: 下载 `.msi` 或 `.exe` 文件
+            - **macOS Intel 用户**: 下载 `x64.dmg` 文件
+            - **macOS Apple Silicon 用户**: 下载 `aarch64.dmg` 文件
+            - **Linux 用户**: 下载 `.AppImage` 或 `.deb` 文件
+
+            ### 安装说明
+            - **Windows**: 运行安装程序，按提示完成安装
+            - **macOS**: 打开 DMG 文件，将应用拖到 Applications 文件夹
+            - **Linux**: 运行 AppImage 或安装 deb 包
+
+            ### 功能特性
+            - 🎮 经典扫雷玩法
+            - 🌍 中英文界面切换
+            - 🎯 多难度级别（初级、中级、高级、自定义）
+            - 🏆 游戏统计和排行榜
+            - 🔊 音效支持
+
+            ### 系统要求
+            - Windows 10/11
+            - macOS 11+ (Intel 或 Apple Silicon)
+            - Ubuntu 20.04+ / Debian 11+
+          releaseDraft: true  # 先创建草稿，方便手动编辑
+          prerelease: false
+          args: ${{ matrix.args }}
+
+  # 更新 README 中的版本号
+  update-readme:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Update README with release info
+        run: |
+          VERSION=${{ github.ref_name }}
+          echo "Updating README for version $VERSION"
+          # 这里可以添加自动更新 README 版本的脚本
+
+  # 通知任务（可选）
+  notify:
+    needs: [build, update-readme]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Build Status
+        run: |
+          if [ "${{ needs.build.result }}" == "success" ]; then
+            echo "✅ 所有平台构建成功！"
+          else
+            echo "❌ 部分平台构建失败，请检查日志"
+          fi

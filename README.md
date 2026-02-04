@@ -55,11 +55,39 @@
 
 ### 构建生产版本
 
+#### 本地构建
+
 ```bash
 .\build_tauri.ps1
 ```
 
 构建后的应用将位于 `src-tauri/target/release` 目录。
+
+#### 使用 GitHub Actions 自动构建（推荐）
+
+项目已配置 GitHub Actions 工作流，支持自动构建和发布：
+
+1. **自动发布版本**
+   - 推送版本标签（如 `v1.0.0`）到 GitHub
+   - GitHub Actions 会自动构建 Windows、macOS 和 Linux 版本
+   - 构建完成后自动创建 GitHub Release
+
+   ```bash
+   # 创建并推送标签
+   git tag v1.0.0
+   git push origin v1.0.0
+   ```
+
+2. **手动构建开发版本**
+   - 进入 GitHub 仓库的 Actions 页面
+   - 选择 "Build Dev Version" 工作流
+   - 点击 "Run workflow" 手动触发构建
+   - 选择目标平台（Windows/macOS/Linux/All）
+   - 构建完成后在 Artifacts 中下载安装包
+
+3. **自动测试**
+   - 每次推送代码到 main/master 分支时自动运行测试
+   - 每次创建 Pull Request 时自动运行代码检查和测试
 
 ## 项目结构
 
